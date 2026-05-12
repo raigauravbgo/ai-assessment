@@ -1,0 +1,31 @@
+{
+  "id": "engineering-d",
+  "role": "engineering",
+  "title": "Anonymous Employee Pulse Survey Theme Extractor",
+  "description": "HR ran an anonymous pulse survey across 80+ BGO employees. Two free-text questions: what's working, and what's not. Leadership wants a five-minute read — top themes, sentiment per theme, example responses — to take into the next exec offsite. The raw CSV is too much; whoever reads it gets lost in 160 individual answers.\n\nBuild a tool that takes the responses CSV and produces a themed summary leadership can consume in five minutes.\n\nThe input CSV has these columns: row_id, question (one of \"working\" or \"not_working\"), response (free text), submitted_at. About 160 rows total (80 employees × 2 questions). Anonymous — no name column.\n\nOutput: a structured summary (Markdown, JSON, HTML — your call) that leadership can scan. Each theme needs a label, a sentiment direction (positive / negative / mixed), and example responses that illustrate it. Pick the output format you'd want to be handed if you were the COO reading this with five minutes between meetings.\n\nTime and scope: ~6-12 hours of focused work. Not a productionised tool — something HR could run themselves next quarter when the survey comes around again. In your notes at submission, tell us where this would break with 800 responses instead of 80, what's brittle, and what you'd add with more time.",
+  "zoneCriteria": {
+    "floor": "Loads the CSV, returns structured output with at least 3 themes; each theme has a label, sentiment direction, and at least one example quote.",
+    "middle": "Themes are empirically derived from the data (not pre-decided); near-duplicate responses are de-duplicated; quotes are verbatim and traceable to a row ID.",
+    "stretch": "Responses that don't fit any major theme are surfaced separately rather than force-fit; strength/confidence indicator per theme; PII redaction in the output."
+  },
+  "trapDefinitions": [
+    {
+      "name": "PII leakage",
+      "caughtLooksLike": "Named individuals are redacted or generalized (\"a manager in finance\") before output; explicit redaction step in code",
+      "missedLooksLike": "Output surfaces \"Rajesh from finance is always blocking\" verbatim in the leadership-facing summary"
+    },
+    {
+      "name": "Forced theme count",
+      "caughtLooksLike": "Theme count is data-driven; output may say \"only 3 substantive themes; remaining responses are noise\"; explicit handling when data doesn't support the requested count",
+      "missedLooksLike": "Rigid N themes regardless of data; bottom themes are thin, near-duplicate, or invented"
+    },
+    {
+      "name": "Quote provenance",
+      "caughtLooksLike": "Every quote is verbatim from a specific input row (with row ID or hash); or paraphrased quotes are explicitly labelled as such",
+      "missedLooksLike": "Quotes are silently smoothed / paraphrased; no traceability — admin can't verify the quote came from a real response"
+    }
+  ],
+  "ambiguousRequirement": "\"Top themes.\" No definition of *top* — by frequency? by intensity? minimum mentions to qualify? Participants must define and document.",
+  "messyDataSpec": "- ~8% of responses are blank or whitespace-only\n- 3 responses are single words (`\"good\"`, `\"fine\"`, `\"meh\"`)\n- 2 responses are duplicates (same text, two row IDs)\n- One response is emoji-only\n- One response mixes Devanagari + Latin script\n- One response is 4 paragraphs (the outlier essay)",
+  "hiddenConstraint": "Output must be reproducible — same CSV in produces the same themes out. Naive LLM use at default temperature, or order-dependent clustering, fails this."
+}

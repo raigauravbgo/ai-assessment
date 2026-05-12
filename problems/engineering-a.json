@@ -1,0 +1,31 @@
+{
+  "id": "engineering-a",
+  "role": "engineering",
+  "title": "Collections Call-Queue Prioritizer",
+  "description": "BGO's collections team starts each day with 200+ overdue accounts and 8 hours of phone time. The current process is a shared spreadsheet plus gut feel — accounts get called in whatever order, the high-value ones get missed, payment-likely accounts go cold. Leadership wants this replaced with something that ranks the queue before the day starts.\n\nBuild a small service or script that takes a CSV of overdue accounts and returns a ranked call queue. Each entry should include the account ID, rank, and a one-line reason explaining why it landed where it did. The team will paste the output into their dialer at the start of each shift.\n\nThe input CSV has these columns: account_id, balance, last_contact_date, contact_attempts, payment_history, customer_segment, notes. About 200 rows of real-ish data exported from their existing system.\n\nOutput: a ranked list with at minimum account_id, rank, and reason per entry. Pick a sensible output format (JSON, CSV, whatever you'd want to consume) and document your choice.\n\nTime and scope: ~6-12 hours of focused work. We're not looking for a perfect production system — build something they could plausibly use tomorrow morning. In your notes at submission, tell us how you'd extend it, what you'd want to test in production, and what you didn't get to.",
+  "zoneCriteria": {
+    "floor": "Parses the input CSV, applies a documented scoring rule, returns a ranked JSON list with `account_id`, `rank`, and `reason`.",
+    "middle": "Scoring weights are configurable (not magic numbers); missing/null fields don't crash and don't silently distort the rank; the reason field actually reflects the score components.",
+    "stretch": "Output groups accounts by recommended action (call now / call later / send SMS / escalate); rationale is human-readable; reproducible across runs."
+  },
+  "trapDefinitions": [
+    {
+      "name": "Mixed date formats",
+      "caughtLooksLike": "Code probes format per-row or per-column and documents the assumption; or rejects unparseable rows explicitly",
+      "missedLooksLike": "Single `datetime.strptime` with one format; ~30% of `last_contact_date` values silently fall to default/NULL"
+    },
+    {
+      "name": "Null / zero in ratio scoring",
+      "caughtLooksLike": "Explicit branch for `contact_attempts == 0` or empty payment history; documented default behavior",
+      "missedLooksLike": "`balance / contact_attempts` blows up or coerces to inf; affected accounts mis-ranked or crash"
+    },
+    {
+      "name": "PII discipline",
+      "caughtLooksLike": "Logs/debug output have account IDs/phones redacted or hashed; or explicit \"no PII in logs\" comment with implementation",
+      "missedLooksLike": "`print(row)` or `logger.info(account)` dumps full PII to stdout/file"
+    }
+  ],
+  "ambiguousRequirement": "\"Prioritize accounts likely to pay.\" No definition of *likely* — participants must define (recency-weighted? historical payment rate? balance ceiling?) and document the choice.",
+  "messyDataSpec": "- One row: `balance = \"$1,250.00\"` (string with currency symbol)\n- One row: column shift from an unescaped comma in the `notes` field\n- Two rows: trailing whitespace on `account_id`\n- ~5% of rows: `payment_history` is empty string vs literal `null` vs `\"[]\"`",
+  "hiddenConstraint": "Ranking must be deterministic — same input CSV produces the same output ordering. AI-default unstable sort, dict-iteration order, or random tiebreaks will fail this on repeat runs."
+}

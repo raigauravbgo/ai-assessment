@@ -1,0 +1,168 @@
+// PRD §10 data model. JSON columns are used for variable-shape config (trap defs,
+// zone criteria, raw Claude responses) so we can iterate on prompt output without
+// migrations during the hackathon. Tighten to typed columns post-launch if useful.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Bucket {
+  fast
+  slow
+  low
+}
+
+enum TrapStatus {
+  caught
+  partial
+  missed
+}
+
+enum SubmissionStatus {
+  selected   // problem picked, 48h timer running, no zip yet
+  submitted  // zip uploaded, awaiting scoring
+  scored     // scoring complete
+  expired    // 48h elapsed without a zip
+}
+
+model Participant {
+  id         String   @id @default(cuid())
+  name       String
+  token      String   @unique
+  role       String
+  createdAt  DateTime @default(now())
+
+  submissions          Submission[]
+  learningCompletions  LearningCompletion[]
+}
+
+model AssessmentCycle {
+  id          String   @id @default(cuid())
+  name        String
+  role        String
+  problemIds  String[]
+  windowStart DateTime
+  windowEnd   DateTime
+  createdAt   DateTime @default(now())
+
+  submissions Submission[]
+}
+
+model Problem {
+  id                    String   @id @default(cuid())
+  role                  String
+  title                 String
+  description           String
+  zoneCriteria          Json     // { floor: [...], middle: [...], stretch: [...] } each with concrete criteria
+  trapDefinitions       Json     // [{ name, caughtLooksLike, missedLooksLike }] × 3
+  ambiguousRequirement  String
+  messyDataSpec         String
+  hiddenConstraint      String
+  createdAt             DateTime @default(now())
+
+  submissions Submission[]
+}
+
+model Submission {
+  id          String           @id @default(cuid())
+  participant Participant      @relation(fields: [participantId], references: [id])
+  participantId String
+  cycle       AssessmentCycle  @relation(fields: [cycleId], references: [id])
+  cycleId     String
+  problem     Problem          @relation(fields: [problemId], references: [id])
+  problemId   String
+
+  selectedAt  DateTime         @default(now())  // PRD §5.1: 48h timer starts here
+  zipPath     String?
+  notesText   String?
+  submittedAt DateTime?
+  status      SubmissionStatus @default(selected)
+
+  diagnosticResponses DiagnosticResponse[]
+  score               Score?
+  adminDecision       AdminDecision?
+
+  @@unique([participantId, cycleId])  // one submission per participant per cycle
+}
+
+model DiagnosticResponse {
+  id            String     @id @default(cuid())
+  submission    Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId  String
+  questionIndex Int        // 0, 1, 2
+  responseText  String
+  createdAt     DateTime   @default(now())
+
+  @@unique([submissionId, questionIndex])
+}
+
+model Score {
+  id           String     @id @default(cuid())
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId String     @unique
+
+  // Dimension 1 — zone (0-3)
+  zoneScore     Int
+  zoneReasoning Json  // { floor: "...", middle: "...", stretch: "..." }
+
+  // Dimension 2 — traps
+  trap1Status   TrapStatus
+  trap2Status   TrapStatus
+  trap3Status   TrapStatus
+  trapEvidence  Json  // [{ trap: "name", status, evidenceCitation }]
+
+  // Dimension 3 — AI fingerprint (1-5 overall + per-marker)
+  aiFingerprintScore     Int
+  aiFingerprintMarkers   Json  // [{ marker, rating, codeExample }] × 5
+  aiFingerprintSummary   String
+
+  // Dimension 4 — notes (each 1-3 or null per PRD §5.4)
+  notesAwarenessScore  Int?
+  notesHonestyScore    Int?
+  notesProcessScore    Int?
+  notesSummary         String?
+
+  // Dimension 5 — diagnostic (each 1-3)
+  diagnosticQ1Score Int
+  diagnosticQ2Score Int
+  diagnosticQ3Score Int
+  diagnosticRevealingPhrase String
+  diagnosticRevealingReason String
+
+  suggestedBucket  Bucket
+  bucketReasoning  String
+
+  // Auditability (PRD §11): raw responses stored for inspection
+  rawResponses Json
+
+  createdAt DateTime @default(now())
+}
+
+model AdminDecision {
+  id              String     @id @default(cuid())
+  submission      Submission @relation(fields: [submissionId], references: [id])
+  submissionId    String     @unique
+  confirmedBucket Bucket?
+  overrideNote    String?
+  flagged         Boolean    @default(false)
+  decidedAt       DateTime   @default(now())
+}
+
+model LearningCompletion {
+  id            String      @id @default(cuid())
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId String
+  role          String
+  section1Viewed Boolean    @default(false)
+  section2Viewed Boolean    @default(false)
+  section3Viewed Boolean    @default(false)
+  section4Viewed Boolean    @default(false)
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([participantId, role])
+}
