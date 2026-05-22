@@ -175,9 +175,11 @@ A doesn't need an LLM in the solution at all. D and C do. The AI-fingerprint dim
 
 ## Open content tasks before go-live
 
-These are content tasks, not engineering tasks. They block the first assessment but not the build.
-
-- [ ] Generate the fixture CSV for Problem A (~200 rows, with the messy-data elements embedded)
-- [ ] Generate the fixture CSV for Problem D (~80 responses, with the messy-data elements embedded)
-- [ ] Generate the fixture resume set for Problem C (~20 resumes across `.txt` and `.pdf`, with the messy-data elements embedded)
+- [x] Generate the fixture CSV for Problem A (~200 rows with embedded trap scenarios — see `scripts/generate-fixtures.ts`)
+- [x] Generate the fixture CSV for Problem D (~160 rows with edge cases embedded)
+- [x] Generate the fixture resume set for Problem C — 20 resumes + job description, all `.txt` for v1; PDF mix deferred to a future round if it adds value beyond what the token-budget + prompt-injection scenarios already test
 - [ ] Author one reference solution per problem (for sanity-checking the scoring pipeline end-to-end before participants run)
+
+**Fixtures are deterministic** (seeded PRNG). Regenerate with `npx tsx scripts/generate-fixtures.ts`. Output bundled as zips at `public/fixtures/<problem-id>.zip` and served at `https://<host>/fixtures/<problem-id>.zip`. The problem cards link to these.
+
+**Do not regenerate while a cycle is live** — if a participant has already downloaded the old version, schema-incompatible changes (column renames, etc.) would silently break their work.

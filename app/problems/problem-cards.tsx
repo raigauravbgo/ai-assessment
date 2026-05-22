@@ -56,13 +56,26 @@ export function ProblemCards({ problems }: { problems: Problem[] }) {
           <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-700 dark:text-zinc-300">
             {p.description}
           </p>
-          <button
-            onClick={() => onPick(p.id)}
-            disabled={busyId !== null}
-            className="mt-4 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            {busyId === p.id ? "Locking..." : "Pick this one"}
-          </button>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => onPick(p.id)}
+              disabled={busyId !== null}
+              className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              {busyId === p.id ? "Locking..." : "Pick this one"}
+            </button>
+            <a
+              href={`/fixtures/${p.id}.zip`}
+              download
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-zinc-600"
+            >
+              Preview starter data ↓
+            </a>
+          </div>
+          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+            Downloading the starter data does <em>not</em> lock your choice. Read all three first, then pick.
+          </p>
         </article>
       ))}
     </div>

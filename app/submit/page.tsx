@@ -27,6 +27,15 @@ export default async function SubmitPage() {
         <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-zinc-700 dark:text-zinc-300">
           {problem.description}
         </p>
+        <div className="mt-4">
+          <a
+            href={`/fixtures/${problem.id}.zip`}
+            download
+            className="inline-block rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-zinc-600"
+          >
+            Download starter data ↓
+          </a>
+        </div>
         <SubmitForm deadlineAtIso={flow.deadlineAt.toISOString()} />
       </div>
     </main>
