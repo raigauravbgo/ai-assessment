@@ -15,12 +15,26 @@ export default async function AuthedAdminLayout({
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <Link
-            href="/admin"
-            className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
-          >
-            AI capability assessment · admin
-          </Link>
+          <div className="flex items-baseline gap-6">
+            <Link
+              href="/admin"
+              className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
+            >
+              AI capability assessment · admin
+            </Link>
+            <Link
+              href="/admin"
+              className="text-xs text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            >
+              Submissions
+            </Link>
+            <Link
+              href="/admin/cycles"
+              className="text-xs text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            >
+              Cycles &amp; participants
+            </Link>
+          </div>
           <SignOutButton />
         </div>
       </header>
