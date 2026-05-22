@@ -4,8 +4,10 @@
 import { config as loadEnv } from "dotenv";
 import { defineConfig } from "prisma/config";
 
+// Order: shell env wins (so you can set DATABASE_URL inline for one-off prod
+// pushes), then .env.local fills in dev-only values, then .env fills any gaps.
+loadEnv({ path: ".env.local" });
 loadEnv({ path: ".env" });
-loadEnv({ path: ".env.local", override: true });
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
