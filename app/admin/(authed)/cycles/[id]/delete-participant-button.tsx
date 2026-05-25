@@ -21,15 +21,23 @@ export function DeleteParticipantButton({
       : `Delete ${participantName}? Cannot be undone.`;
     if (!confirm(warn)) return;
     setBusy(true);
-    const res = await fetch(`/api/admin/participants/${participantId}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) {
-      alert("Delete failed — check server logs.");
+    try {
+      const res = await fetch(`/api/admin/participants/${participantId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        alert(
+          `Delete failed (${res.status}):\n\n${body.error ?? res.statusText}\n\n${body.message ?? ""}`,
+        );
+        return;
+      }
+      router.refresh();
+    } catch (err) {
+      alert(`Delete failed:\n${(err as Error).message}`);
+    } finally {
       setBusy(false);
-      return;
     }
-    router.refresh();
   }
 
   return (
