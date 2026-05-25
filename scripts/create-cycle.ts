@@ -28,7 +28,10 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const name = args.name ?? `Cycle ${new Date().toISOString().slice(0, 10)}`;
   const role = args.role ?? "engineering";
-  const hours = args.hours ?? 48;
+  // Cycle window is the *enrollment* period, distinct from the per-participant
+  // 48h work timer that starts when they pick a problem. Default 1 week so the
+  // pilot doesn't expire under participants who join late.
+  const hours = args.hours ?? 168;
 
   let problemIds = args.problems;
   if (!problemIds) {

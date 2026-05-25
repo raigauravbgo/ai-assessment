@@ -4,6 +4,8 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { AddParticipantForm } from "./add-participant-form";
 import { TokenLink } from "./token-link";
+import { DeleteParticipantButton } from "./delete-participant-button";
+import { DeleteCycleButton } from "./delete-cycle-button";
 
 type Params = Promise<{ id: string }>;
 
@@ -55,6 +57,10 @@ export default async function CycleDetail({ params }: { params: Params }) {
   const baseUrl = `${proto}://${host}`;
 
   const isActive = cycle.windowEnd > new Date();
+  const submissionCount = participants.reduce(
+    (acc, p) => acc + p.submissions.length,
+    0,
+  );
 
   return (
     <div className="space-y-8">
@@ -76,6 +82,11 @@ export default async function CycleDetail({ params }: { params: Params }) {
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
           role: {cycle.role} · window {cycle.windowStart.toISOString().slice(0, 16).replace("T", " ")} → {cycle.windowEnd.toISOString().slice(0, 16).replace("T", " ")} UTC · {cycle.problemIds.length} problems available
         </p>
+        {!isActive && (
+          <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+            This cycle&apos;s window has expired. Create a new cycle to onboard new participants — existing pending participants will auto-pick-up the new active cycle.
+          </p>
+        )}
       </div>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -105,6 +116,7 @@ export default async function CycleDetail({ params }: { params: Params }) {
                   <th className="px-4 py-2 font-medium">Status</th>
                   <th className="px-4 py-2 font-medium">Bucket</th>
                   <th className="px-4 py-2 font-medium">Token URL</th>
+                  <th className="px-4 py-2 font-medium"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -121,6 +133,13 @@ export default async function CycleDetail({ params }: { params: Params }) {
                     <td className="px-4 py-2 text-xs text-zinc-400">—</td>
                     <td className="px-4 py-2">
                       <TokenLink url={`${baseUrl}/?token=${p.token}`} />
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      <DeleteParticipantButton
+                        participantId={p.id}
+                        participantName={p.name}
+                        hasSubmission={false}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -152,6 +171,13 @@ export default async function CycleDetail({ params }: { params: Params }) {
                       <td className="px-4 py-2">
                         <TokenLink url={`${baseUrl}/?token=${p.token}`} />
                       </td>
+                      <td className="px-4 py-2 text-right">
+                        <DeleteParticipantButton
+                          participantId={p.id}
+                          participantName={p.name}
+                          hasSubmission={true}
+                        />
+                      </td>
                     </tr>
                   );
                 })}
@@ -159,6 +185,20 @@ export default async function CycleDetail({ params }: { params: Params }) {
             </table>
           </div>
         )}
+      </section>
+
+      <section className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+        <h2 className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          Danger zone
+        </h2>
+        <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+          Deletes this cycle and any submissions inside it. Participants themselves are not deleted — they may belong to other cycles by role.
+        </p>
+        <DeleteCycleButton
+          cycleId={cycle.id}
+          cycleName={cycle.name}
+          submissionCount={submissionCount}
+        />
       </section>
     </div>
   );

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 const bodySchema = z.object({
   name: z.string().min(1).max(200),
   role: z.string().min(1).max(50),
-  hours: z.number().int().min(1).max(336),
+  hours: z.number().int().min(1).max(2160), // up to 90 days; cohort enrollment window
 });
 
 export async function POST(req: Request) {

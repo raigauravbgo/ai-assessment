@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 export function CreateCycleForm() {
   const [name, setName] = useState("");
   const [role, setRole] = useState("engineering");
-  const [hours, setHours] = useState(48);
+  // 168h = 1 week. This is the *cohort enrollment* window, not the per-participant
+  // 48h work timer (that starts when they pick a problem).
+  const [hours, setHours] = useState(168);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
