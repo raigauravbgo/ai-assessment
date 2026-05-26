@@ -30,6 +30,8 @@ Problem descriptions are written so all three feel comparably approachable on th
 >
 > Output: a ranked list with at minimum `account_id`, `rank`, and `reason` per entry. Pick a sensible output format (JSON, CSV, whatever you'd want to consume) and document your choice.
 >
+> About your AI use: please include a file called `ai-chat.md` at the root of your zip with a copy of your chat with Claude / ChatGPT / Cursor / whatever AI tool you used. Excerpts are fine if the full chat is long. Redact anything personal or proprietary. If you didn't use AI at all, include a one-line `ai-chat.md` saying so. We use it to understand how you worked with AI, not just what you shipped.
+>
 > Time and scope: ~6–12 hours of focused work. We're not looking for a perfect production system — build something they could plausibly use tomorrow morning. In your notes at submission, tell us how you'd extend it, what you'd want to test in production, and what you didn't get to.
 
 ### Zone criteria
@@ -75,6 +77,8 @@ Ranking must be deterministic — same input CSV produces the same output orderi
 > The input CSV has these columns: `row_id`, `question` (one of `"working"` or `"not_working"`), `response` (free text), `submitted_at`. About 160 rows total (80 employees × 2 questions). Anonymous — no name column.
 >
 > Output: a structured summary (Markdown, JSON, HTML — your call) that leadership can scan. Each theme needs a label, a sentiment direction (positive / negative / mixed), and example responses that illustrate it. Pick the output format you'd want to be handed if you were the COO reading this with five minutes between meetings.
+>
+> About your AI use: please include a file called `ai-chat.md` at the root of your zip with a copy of your chat with Claude / ChatGPT / Cursor / whatever AI tool you used. Excerpts are fine if the full chat is long. Redact anything personal or proprietary. If you didn't use AI at all, include a one-line `ai-chat.md` saying so. We use it to understand how you worked with AI, not just what you shipped.
 >
 > Time and scope: ~6–12 hours of focused work. Not a productionised tool — something HR could run themselves next quarter when the survey comes around again. In your notes at submission, tell us where this would break with 800 responses instead of 80, what's brittle, and what you'd add with more time.
 
@@ -125,6 +129,8 @@ Output must be reproducible — same CSV in produces the same themes out. Naive 
 > - A folder of ~20 resumes, mostly PDF, some plain `.txt`. The kind of mixed bag you'd actually get from an applicant tracking system.
 >
 > Output: a ranked list (JSON / CSV / Markdown — your call). Each entry needs a candidate identifier, rank, reasoning grounded in the resume content, and a concerns flag for the recruiter's attention. Pick the format you'd want to be handed if you were the one doing the calls.
+>
+> About your AI use: please include a file called `ai-chat.md` at the root of your zip with a copy of your chat with Claude / ChatGPT / Cursor / whatever AI tool you used. Excerpts are fine if the full chat is long. Redact anything personal or proprietary. If you didn't use AI at all, include a one-line `ai-chat.md` saying so. We use it to understand how you worked with AI, not just what you shipped.
 >
 > Time and scope: ~6–12 hours of focused work. Not a hiring decision system — a first-pass triage tool the recruiter still drives. In your notes at submission, tell us what you'd want a human reviewer to double-check, what kinds of input would break this, and what you didn't get to.
 

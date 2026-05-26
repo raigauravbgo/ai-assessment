@@ -16,7 +16,9 @@ export type NotesOutput = z.infer<typeof notesOutputSchema>;
 export function buildNotesSystem(problem: ProblemConfig): string {
   return `You are scoring the **notes quality** dimension of an AI-leverage coding assessment.
 
-The participant submitted free-form notes alongside their code. Score three sub-dimensions on a 1–3 scale each, then give a one-paragraph summary.
+The participant submitted free-form notes alongside their code. Note that they may have ALSO included an \`ai-chat.md\` file in the zip (scored separately under AI fingerprint). The notes-process sub-score below should focus on what the NOTES reveal that neither the code nor the chat file would show — strategic decisions, tradeoffs, dead-ends.
+
+Score three sub-dimensions on a 1–3 scale each, then give a one-paragraph summary.
 
 1. **awareness** — does the participant flag AI-specific limitations in what they built?
    - 3: explicit awareness of AI failure modes relevant to their solution (e.g. hallucination risk, non-determinism, trust in API shape)
@@ -28,8 +30,8 @@ The participant submitted free-form notes alongside their code. Score three sub-
    - 2: surface-level acknowledgement ("didn't finish the stretch goal")
    - 1: claims completeness, overstates results, or asserts confidence without basis
 
-3. **process** — does the note reveal something about how they worked that the code doesn't show
-   - 3: describes a specific decision, dead-end, or tradeoff that the code can't show
+3. **process** — does the note reveal something the code and chat history can't show — a strategic decision, a dead-end, a tradeoff explanation
+   - 3: describes a specific decision, dead-end, or tradeoff that's not derivable from code or chat alone
    - 2: describes high-level approach
    - 1: no process content (only "what" not "how" or "why")
 

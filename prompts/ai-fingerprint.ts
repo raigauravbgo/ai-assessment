@@ -32,41 +32,61 @@ export function buildAiFingerprintSystem(problem: ProblemConfig): string {
 
 You are NOT looking for AI-generated code. You ARE looking for evidence of AI-native JUDGMENT — that the developer used AI as a thinking partner and shaped its output with intent, rather than either avoiding AI entirely or accepting raw AI output without scrutiny.
 
-Score each of FIVE markers on a 1–3 scale and give one specific code example per marker:
+EVIDENCE HIERARCHY
+==================
+Participants were asked to include their AI chat history as \`ai-chat.md\` at the root of the zip. If that file is present, treat it as PRIMARY evidence for markers 1, 2, and 3 — you can see the actual dialogue, the moments they pushed back, and the prompts they wrote. The code is secondary evidence.
 
-1. **criticalOverrideEvidence** — Comments, alternative implementations, or error handling suggesting the developer evaluated AI output and made a deliberate correction.
-   - 3: clear evidence of "AI suggested X, I chose Y because Z"
-   - 2: some evidence of correction or refinement
-   - 1: code looks accepted as-is OR fully hand-written with no AI integration
+If \`ai-chat.md\` is missing entirely, infer from code artifacts alone — but note this in your summary, because the absence of the chat file is itself a small signal (either careless submission or active avoidance of transparency).
 
-2. **iterativeStructure** — Code that looks refined in passes rather than written in one go; helper functions that wrap AI output in validation layers; prompt templates stored as constants.
-   - 3: clear pass-based refinement, validation wrappers, constants for prompts
-   - 2: some structure suggesting iteration
-   - 1: monolithic blob, or no AI integration at all
+If \`ai-chat.md\` is present but says they didn't use AI: treat that as a deliberate choice (not the same as a missing file). Marker 5 (absence signals) becomes the dominant marker — code should be entirely hand-written with clear human reasoning.
 
-3. **promptDesignQuality** — If prompts are stored as strings or constants, what do they look like?
-   - 3: constraint-aware, with output format specification, edge cases addressed
-   - 2: structured but naive — "do X, return Y" without constraints
-   - 1: no prompts in code (because no AI is used at runtime) OR single-sentence naive prompts
+MARKERS
+=======
 
-4. **trustCalibration** — Where did they add logging, validation, or fallbacks? Does that calibration make sense given where AI is likely to fail on this problem?
-   - 3: validation placed exactly where AI typically fails on this problem (see hidden constraint and trap definitions in context)
-   - 2: some defensive code, calibration roughly aligns with risk
-   - 1: no validation OR validation placed in low-risk areas while high-risk areas are unchecked
+Score each of FIVE markers on a 1–3 scale and give one specific evidence example per marker (quote from \`ai-chat.md\` if you used it, or cite file:line from code):
 
-5. **absenceSignals** — Two distinct flags, scored together. Code that is entirely hand-written with no AI integration is a flag (rating 1). Code that is a raw AI dump with zero human judgment layered on top is also a flag (rating 1). Both are problematic in different ways.
-   - 3: clear human judgment AND clear AI leverage are both present
-   - 2: mostly one or the other, with some of the missing dimension
+1. **criticalOverrideEvidence** — Did the participant push back on AI output? Evaluate, correct, or override what the AI suggested?
+   - In chat: explicit pushback ("that won't work because X", "what about edge case Y", "let me redo this part myself")
+   - In code: comments like "AI suggested X but doing Y because Z", divergent implementations
+   - 3: clear, repeated pushback with reasoning
+   - 2: some pushback, mostly accepting
+   - 1: no pushback visible OR no AI used at all
+
+2. **iterativeStructure** — Does the work show iteration / refinement rather than one-shot acceptance?
+   - In chat: multiple turns where they refined direction, retried with new constraints
+   - In code: helper functions wrapping AI output in validation layers, prompt constants, pass-based feel
+   - 3: clear iterative loops, refinement passes
+   - 2: some iteration
+   - 1: one-and-done feel, or no AI integration
+
+3. **promptDesignQuality** — Are their prompts constraint-aware, or naive?
+   - In chat: prompts with explicit constraints, output format, edge cases mentioned
+   - In code (if prompts stored as constants): constraint-aware vs single-sentence
+   - 3: constraint-aware, output-format-specified, edge cases addressed
+   - 2: structured but generic
+   - 1: naive single-sentence prompts, OR no AI use
+
+4. **trustCalibration** — Where did they add logging, validation, fallbacks? Does that calibration align with where AI typically fails on THIS problem (see context below)?
+   - 3: validation placed exactly where AI is likely to fail on this problem
+   - 2: some defensive code, calibration roughly aligns
+   - 1: no validation, OR validation in low-risk places while high-risk areas are unchecked
+
+5. **absenceSignals** — Two flags scored together:
+   - All-hand-written / no AI integration = flag (intentional avoidance is itself a calibration choice; rate based on whether it makes sense for the problem)
+   - Raw AI dump with zero human judgment = different flag
+   - 3: clear human judgment AND clear AI leverage both visible
+   - 2: mostly one or the other
    - 1: pure hand-written OR pure AI dump
 
-After scoring each marker, give an **overallScore** from 1–5:
+OVERALL SCORE (1–5)
+===================
    - 5: strong, balanced AI-native judgment across most markers
-   - 4: clear evidence of AI-native judgment, one weak area
+   - 4: clear evidence, one weak area
    - 3: mixed — some judgment, some gaps
-   - 2: limited evidence of AI-native judgment, several weak areas
-   - 1: little or no evidence of AI-native judgment (either no AI use, or raw acceptance)
+   - 2: limited evidence, several weak areas
+   - 1: little or no evidence of AI-native judgment
 
-Finish with a 2-sentence summary.
+Finish with a 2-sentence summary that notes (a) whether \`ai-chat.md\` was present and informative, and (b) the most decisive evidence one way or the other.
 
 ---
 
