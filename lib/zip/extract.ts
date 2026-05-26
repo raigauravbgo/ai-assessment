@@ -31,7 +31,37 @@ const TEXT_EXTENSIONS = new Set([
   "gitignore", "gitattributes",
 ]);
 
-const SKIP_DIR_PREFIXES = ["__macosx/", "node_modules/", ".git/", ".venv/", "venv/", "dist/", "build/", ".next/"];
+// Directories whose contents we don't show to the scorer. They're either
+// generated/dependency junk (node_modules, build outputs) or runtime artifacts
+// (data/, output/, coverage). The participant's actual judgment lives elsewhere.
+const SKIP_DIR_PREFIXES = [
+  "__macosx/",
+  "node_modules/",
+  ".git/",
+  ".venv/",
+  "venv/",
+  "env/",
+  ".env/",
+  "dist/",
+  "build/",
+  "out/",
+  ".next/",
+  "__pycache__/",
+  ".pytest_cache/",
+  ".mypy_cache/",
+  ".ruff_cache/",
+  "data/",
+  "output/",
+  "outputs/",
+  "coverage/",
+  "htmlcov/",
+  ".nyc_output/",
+  "target/",
+  "vendor/",
+  ".gradle/",
+  ".idea/",
+  ".vscode/",
+];
 
 export type ExtractedSubmission = {
   fileTree: string;
@@ -75,9 +105,25 @@ export function extractZip(zipBytes: Buffer): ExtractedSubmission {
   }
   const entries = zip.getEntries();
 
-  if (entries.length > MAX_FILE_COUNT) {
+  // Pass 1: filter to entries we'll actually look at, rejecting unsafe paths
+  // and skipping well-known generated/cache directories. The MAX_FILE_COUNT
+  // limit applies AFTER filtering — a participant who zipped node_modules
+  // shouldn't be rejected just because the dependency tree is huge.
+  const candidates: Array<{ entry: AdmZip.IZipEntry; path: string }> = [];
+  for (const entry of entries) {
+    if (entry.isDirectory) continue;
+    const path = normalizePath(entry.entryName);
+    if (!path) {
+      throw new ZipValidationError(`unsafe path in zip: ${entry.entryName}`);
+    }
+    if (shouldSkipDir(path)) continue;
+    candidates.push({ entry, path });
+  }
+
+  if (candidates.length > MAX_FILE_COUNT) {
     throw new ZipValidationError(
-      `zip contains ${entries.length} entries; limit is ${MAX_FILE_COUNT}`,
+      `zip contains ${candidates.length} files after stripping generated dirs ` +
+        `(${entries.length} total); limit is ${MAX_FILE_COUNT}. Strip output/data/build dirs and re-submit.`,
     );
   }
 
@@ -86,20 +132,13 @@ export function extractZip(zipBytes: Buffer): ExtractedSubmission {
   let totalBytes = 0;
   let truncated = false;
 
-  for (const entry of entries) {
-    if (entry.isDirectory) continue;
-
-    const path = normalizePath(entry.entryName);
-    if (!path) {
-      throw new ZipValidationError(`unsafe path in zip: ${entry.entryName}`);
-    }
-    if (shouldSkipDir(path)) continue;
-
+  // Pass 2: walk the filtered set, enforce size limits, extract text content.
+  for (const { entry, path } of candidates) {
     const declared = entry.header.size;
     totalBytes += declared;
     if (totalBytes > MAX_TOTAL_BYTES) {
       throw new ZipValidationError(
-        `zip uncompressed size exceeds ${MAX_TOTAL_BYTES} bytes`,
+        `zip uncompressed size exceeds ${MAX_TOTAL_BYTES} bytes (after stripping generated dirs)`,
       );
     }
 
