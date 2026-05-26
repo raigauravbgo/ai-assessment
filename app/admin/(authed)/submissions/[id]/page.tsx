@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { DIAGNOSTIC_QUESTIONS } from "@/lib/config/diagnostic-questions";
 import { DecisionForm } from "./decision-form";
 import { RescoreButton } from "./rescore-button";
+import { AttachChatForm } from "./attach-chat-form";
 
 type FullSubmission = Prisma.SubmissionGetPayload<{
   include: {
@@ -55,6 +56,12 @@ export default async function SubmissionDetail({ params }: { params: Params }) {
           <BucketSuggestion score={submission.score} />
           <AdminAction submission={submission} />
         </>
+      )}
+
+      {submission.zipPath && (
+        <Card title="Attach AI chat (out-of-band)">
+          <AttachChatForm submissionId={submission.id} />
+        </Card>
       )}
     </div>
   );
