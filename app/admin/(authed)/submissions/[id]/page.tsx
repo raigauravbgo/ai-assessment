@@ -69,20 +69,29 @@ export default async function SubmissionDetail({ params }: { params: Params }) {
 
 function Header({ submission }: { submission: FullSubmission }) {
   return (
-    <div>
-      <Link href="/admin" className="text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
-        ← all submissions
-      </Link>
-      <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-        {submission.participant.name} · {submission.problem.title}
-      </h1>
-      <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-        cycle: {submission.cycle.name} · status: {submission.status} · selected{" "}
-        {submission.selectedAt.toISOString().slice(0, 16).replace("T", " ")} UTC
-        {submission.submittedAt && (
-          <> · submitted {submission.submittedAt.toISOString().slice(0, 16).replace("T", " ")} UTC</>
-        )}
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <Link href="/admin" className="text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
+          ← all submissions
+        </Link>
+        <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          {submission.participant.name} · {submission.problem.title}
+        </h1>
+        <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          cycle: {submission.cycle.name} · status: {submission.status} · selected{" "}
+          {submission.selectedAt.toISOString().slice(0, 16).replace("T", " ")} UTC
+          {submission.submittedAt && (
+            <> · submitted {submission.submittedAt.toISOString().slice(0, 16).replace("T", " ")} UTC</>
+          )}
+        </div>
       </div>
+      <a
+        href={`/api/admin/submissions/${submission.id}/report`}
+        download
+        className="shrink-0 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-zinc-600"
+      >
+        Download report ↓
+      </a>
     </div>
   );
 }
