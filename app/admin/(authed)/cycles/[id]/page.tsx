@@ -21,7 +21,7 @@ export default async function CycleDetail({ params }: { params: Params }) {
   // (not directly to the cycle), we list participants whose submissions are
   // for this cycle, plus participants matching the cycle's role.
   // For the v1 hackathon model: cycle.role + Participant.role match is enough.
-  const participants = await prisma.participant.findMany({
+  const participantsRaw = await prisma.participant.findMany({
     where: {
       role: cycle.role,
       submissions: { some: { cycleId: cycle.id } },
@@ -32,8 +32,23 @@ export default async function CycleDetail({ params }: { params: Params }) {
         include: { score: true },
       },
     },
-    orderBy: { createdAt: "desc" },
   });
+
+  // Sort by headline score (desc). Submissions without a score yet land at the
+  // bottom in createdAt order.
+  const participants = participantsRaw
+    .map((p) => ({
+      ...p,
+      headline: headlineFromScore(p.submissions[0]?.score ?? null),
+    }))
+    .sort((a, b) => {
+      const ah = a.headline;
+      const bh = b.headline;
+      if (ah !== null && bh !== null) return bh - ah;
+      if (ah !== null) return -1;
+      if (bh !== null) return 1;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
 
   // Also list participants who were created with this role but haven't been
   // added to a submission yet (newly created participants who haven't picked
@@ -108,10 +123,10 @@ export default async function CycleDetail({ params }: { params: Params }) {
             <table className="w-full text-sm">
               <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
                 <tr>
+                  <th className="px-4 py-2 font-medium">Score</th>
                   <th className="px-4 py-2 font-medium">Name</th>
                   <th className="px-4 py-2 font-medium">Status</th>
                   <th className="px-4 py-2 font-medium">Bucket</th>
-                  <th className="px-4 py-2 font-medium">Score</th>
                   <th className="px-4 py-2 font-medium">Token URL</th>
                   <th className="px-4 py-2 font-medium"></th>
                 </tr>
@@ -119,6 +134,7 @@ export default async function CycleDetail({ params }: { params: Params }) {
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {pendingParticipants.map((p) => (
                   <tr key={p.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800">
+                    <td className="px-4 py-2 text-xs text-zinc-400">—</td>
                     <td className="px-4 py-2 font-medium text-zinc-900 dark:text-zinc-50">
                       {p.name}
                     </td>
@@ -127,7 +143,6 @@ export default async function CycleDetail({ params }: { params: Params }) {
                         not started
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-xs text-zinc-400">—</td>
                     <td className="px-4 py-2 text-xs text-zinc-400">—</td>
                     <td className="px-4 py-2">
                       <TokenLink url={`${baseUrl}/?token=${p.token}`} />
@@ -144,9 +159,19 @@ export default async function CycleDetail({ params }: { params: Params }) {
                 {participants.map((p) => {
                   const sub = p.submissions[0];
                   const bucket = sub?.score?.suggestedBucket ?? null;
-                  const headline = headlineFromScore(sub?.score ?? null);
+                  const headline = p.headline;
                   return (
                     <tr key={p.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800">
+                      <td className="px-4 py-2">
+                        {headline === null ? (
+                          <span className="text-xs text-zinc-400">—</span>
+                        ) : (
+                          <span className="font-mono text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                            {headline.toFixed(1)}
+                            <span className="text-xs font-normal text-zinc-400">/10</span>
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-2 font-medium text-zinc-900 dark:text-zinc-50">
                         {p.name}
                       </td>
@@ -165,13 +190,6 @@ export default async function CycleDetail({ params }: { params: Params }) {
                           </span>
                         ) : (
                           <span className="text-xs text-zinc-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2 text-sm font-mono text-zinc-700 dark:text-zinc-300">
-                        {headline === null ? (
-                          <span className="text-xs text-zinc-400">—</span>
-                        ) : (
-                          <span>{headline.toFixed(1)}<span className="text-xs text-zinc-400">/10</span></span>
                         )}
                       </td>
                       <td className="px-4 py-2">

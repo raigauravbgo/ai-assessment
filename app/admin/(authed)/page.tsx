@@ -41,7 +41,7 @@ function relativeTime(d: Date | null): string {
 }
 
 export default async function AdminHome() {
-  const submissions = await prisma.submission.findMany({
+  const submissionsRaw = await prisma.submission.findMany({
     include: {
       participant: true,
       problem: true,
@@ -53,6 +53,19 @@ export default async function AdminHome() {
     take: 200,
   });
 
+  // Sort by headline score (desc) for scored submissions; unscored go to the
+  // bottom in selectedAt order. The headline is the primary comparison scale.
+  const submissions = submissionsRaw
+    .map((s) => ({ ...s, headline: headlineFromScore(s.score) }))
+    .sort((a, b) => {
+      const ah = a.headline;
+      const bh = b.headline;
+      if (ah !== null && bh !== null) return bh - ah; // both scored — headline desc
+      if (ah !== null) return -1; // scored ones first
+      if (bh !== null) return 1;
+      return b.selectedAt.getTime() - a.selectedAt.getTime(); // unscored: newest first
+    });
+
   const cycleCount = await prisma.assessmentCycle.count();
 
   return (
@@ -63,7 +76,7 @@ export default async function AdminHome() {
         </h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
           {submissions.length} submission{submissions.length === 1 ? "" : "s"} across {cycleCount}{" "}
-          cycle{cycleCount === 1 ? "" : "s"}. Click a row to see scoring detail and confirm or override the bucket.
+          cycle{cycleCount === 1 ? "" : "s"}, sorted by headline score (highest first). Unscored submissions at the bottom.
         </p>
       </div>
 
@@ -74,19 +87,29 @@ export default async function AdminHome() {
           <table className="w-full text-sm">
             <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
               <tr>
+                <th className="px-4 py-2 font-medium">Score</th>
                 <th className="px-4 py-2 font-medium">Participant</th>
                 <th className="px-4 py-2 font-medium">Problem</th>
                 <th className="px-4 py-2 font-medium">Cycle</th>
                 <th className="px-4 py-2 font-medium">Status</th>
                 <th className="px-4 py-2 font-medium">Submitted</th>
                 <th className="px-4 py-2 font-medium">Bucket</th>
-                <th className="px-4 py-2 font-medium">Score</th>
                 <th className="px-4 py-2 font-medium">Admin</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {submissions.map((s) => (
                 <tr key={s.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800">
+                  <td className="px-4 py-2">
+                    {s.headline === null ? (
+                      <span className="text-xs text-zinc-400">—</span>
+                    ) : (
+                      <span className="font-mono text-base font-semibold text-zinc-900 dark:text-zinc-50">
+                        {s.headline.toFixed(1)}
+                        <span className="text-xs font-normal text-zinc-400">/10</span>
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-2">
                     <Link
                       href={`/admin/submissions/${s.id}`}
@@ -124,16 +147,6 @@ export default async function AdminHome() {
                     ) : (
                       <span className="text-xs text-zinc-400">—</span>
                     )}
-                  </td>
-                  <td className="px-4 py-2 text-sm font-mono text-zinc-700 dark:text-zinc-300">
-                    {(() => {
-                      const h = headlineFromScore(s.score);
-                      return h === null ? (
-                        <span className="text-xs text-zinc-400">—</span>
-                      ) : (
-                        <span>{h.toFixed(1)}<span className="text-xs text-zinc-400">/10</span></span>
-                      );
-                    })()}
                   </td>
                   <td className="px-4 py-2 text-xs">
                     {s.adminDecision ? (

@@ -297,8 +297,14 @@ function MostRevealingPhrase({ score }: { score: ScoreRow }) {
 function BucketSuggestion({ score }: { score: ScoreRow }) {
   const headline = headlineFromScore(score);
   return (
-    <Card title="Suggested bucket">
-      <div className="mb-3 flex items-baseline gap-3">
+    <Card title="Headline score">
+      <div className="mb-3 flex items-baseline gap-4">
+        {headline !== null && (
+          <span className="font-mono text-4xl font-semibold text-zinc-900 dark:text-zinc-50">
+            {headline.toFixed(1)}
+            <span className="text-xl font-normal text-zinc-400"> / 10</span>
+          </span>
+        )}
         <span
           className={`inline-block rounded px-3 py-1 text-sm font-medium ${
             score.suggestedBucket === "fast"
@@ -310,18 +316,9 @@ function BucketSuggestion({ score }: { score: ScoreRow }) {
         >
           {score.suggestedBucket} multiplier
         </span>
-        {headline !== null && (
-          <span className="font-mono text-sm text-zinc-700 dark:text-zinc-300">
-            headline {headline.toFixed(1)}
-            <span className="text-xs text-zinc-400">/10</span>
-          </span>
-        )}
       </div>
       <p className="text-sm leading-6 text-zinc-700 dark:text-zinc-300">
         {score.bucketReasoning}
-      </p>
-      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-        The bucket is the authoritative label (PRD §5.5). The headline 0–10 is a deterministic weighted sum of the dimension scores — useful for sortable comparison across the cohort, not for replacing the bucket.
       </p>
     </Card>
   );

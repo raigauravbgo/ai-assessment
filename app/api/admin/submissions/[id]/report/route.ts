@@ -102,20 +102,18 @@ function renderReport(s: ReportInput): string {
   lines.push("---");
   lines.push("");
 
-  // ─── Final bucket ───────────────────────────────────────────────────────
+  // ─── Headline score + bucket ───────────────────────────────────────────
   const headline = headlineFromScore(score);
-  lines.push("## Final bucket");
+  lines.push("## Result");
   lines.push("");
+  if (headline !== null) {
+    lines.push(`# ${headline.toFixed(1)} / 10`);
+    lines.push("");
+  }
   if (final) {
-    lines.push(`**${bucketLabel(final)}**${isOverride ? ` _(admin override of AI's suggested "${score!.suggestedBucket}")_` : ""}`);
-    if (headline !== null) {
-      lines.push("");
-      lines.push(`**Headline score: ${headline.toFixed(1)} / 10**`);
-      lines.push("");
-      lines.push(
-        "_The bucket is the authoritative label (per PRD §5.5). The headline score is a deterministic weighted sum of the dimension scores below — useful for sortable comparison across the cohort, not a replacement for the bucket._",
-      );
-    }
+    lines.push(
+      `Bucket: **${bucketLabel(final)}**${isOverride ? ` _(admin override of AI's suggested "${score!.suggestedBucket}")_` : ""}`,
+    );
     if (decision?.flagged) {
       lines.push("");
       lines.push("⚠️ Flagged by admin for second-opinion review.");
@@ -133,10 +131,14 @@ function renderReport(s: ReportInput): string {
   lines.push("");
 
   // ─── Rubric ────────────────────────────────────────────────────────────
-  lines.push("## What the ratings mean");
+  lines.push("## What the score means");
   lines.push("");
   lines.push(
-    "Participants are grouped into one of three **multiplier buckets** based on how effectively they leveraged AI to deliver. The bucketing logic is deliberately conservative — particularly for the low bucket, which requires three convergent weak signals before flagging someone as not-a-fit.",
+    "**Headline score (0–10)** is the primary comparison scale across the cohort. It's a deterministic weighted sum of the five dimension scores below — no LLM judgment, just math. Weights: AI fingerprint 40% · trap handling 20% · diagnostic 20% · zone 15% · notes 5%. If notes weren't submitted, the 5% is redistributed proportionally across the other four, so skipping notes is neither penalised nor rewarded.",
+  );
+  lines.push("");
+  lines.push(
+    "**Bucket** is a supporting categorical signal: it tells you whether the dimension scores *converged* (clearly strong or clearly weak across multiple dimensions) or were mixed. Two participants with similar headline scores can sit in different buckets if their dimension profiles differ.",
   );
   lines.push("");
   lines.push("| Bucket | Criteria |");
@@ -145,9 +147,6 @@ function renderReport(s: ReportInput): string {
   lines.push("| **Slow multiplier** | Any signal present but not consistently strong. The default for anyone not clearly fast or low. |");
   lines.push("| **Low multiplier** | AI fingerprint ≤2/5 **AND** traps mostly missed **AND** diagnostic flat — **all three required**. A single strong dimension takes someone out of this bucket. |");
   lines.push("");
-  lines.push(
-    "The **headline score (0–10)** at the top is a deterministic weighted sum of the dimension scores, not an LLM judgment: AI fingerprint 40% · trap handling 20% · diagnostic 20% · zone 15% · notes 5%. If notes weren't submitted, the 5% is redistributed proportionally across the other four (so skipping notes is neither penalised nor rewarded). The headline is for sorting / comparison; the bucket label remains authoritative.",
-  );
   lines.push("");
   lines.push("Scoring covers **five dimensions**:");
   lines.push("");
