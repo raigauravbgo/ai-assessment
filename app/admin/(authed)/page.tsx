@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { headlineFromScore } from "@/lib/scoring/bucket";
 
 // Aggregate view (PRD §8). Lists all submissions across all cycles, newest first.
 // For a hackathon-sized cohort (~15 participants) filters aren't needed; if the
@@ -79,6 +80,7 @@ export default async function AdminHome() {
                 <th className="px-4 py-2 font-medium">Status</th>
                 <th className="px-4 py-2 font-medium">Submitted</th>
                 <th className="px-4 py-2 font-medium">Bucket</th>
+                <th className="px-4 py-2 font-medium">Score</th>
                 <th className="px-4 py-2 font-medium">Admin</th>
               </tr>
             </thead>
@@ -122,6 +124,16 @@ export default async function AdminHome() {
                     ) : (
                       <span className="text-xs text-zinc-400">—</span>
                     )}
+                  </td>
+                  <td className="px-4 py-2 text-sm font-mono text-zinc-700 dark:text-zinc-300">
+                    {(() => {
+                      const h = headlineFromScore(s.score);
+                      return h === null ? (
+                        <span className="text-xs text-zinc-400">—</span>
+                      ) : (
+                        <span>{h.toFixed(1)}<span className="text-xs text-zinc-400">/10</span></span>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-2 text-xs">
                     {s.adminDecision ? (

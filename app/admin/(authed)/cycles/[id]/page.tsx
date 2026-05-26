@@ -6,6 +6,7 @@ import { AddParticipantForm } from "./add-participant-form";
 import { TokenLink } from "./token-link";
 import { DeleteParticipantButton } from "./delete-participant-button";
 import { DeleteCycleButton } from "./delete-cycle-button";
+import { headlineFromScore } from "@/lib/scoring/bucket";
 
 type Params = Promise<{ id: string }>;
 
@@ -28,12 +29,7 @@ export default async function CycleDetail({ params }: { params: Params }) {
     include: {
       submissions: {
         where: { cycleId: cycle.id },
-        select: {
-          id: true,
-          status: true,
-          submittedAt: true,
-          score: { select: { suggestedBucket: true } },
-        },
+        include: { score: true },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -115,6 +111,7 @@ export default async function CycleDetail({ params }: { params: Params }) {
                   <th className="px-4 py-2 font-medium">Name</th>
                   <th className="px-4 py-2 font-medium">Status</th>
                   <th className="px-4 py-2 font-medium">Bucket</th>
+                  <th className="px-4 py-2 font-medium">Score</th>
                   <th className="px-4 py-2 font-medium">Token URL</th>
                   <th className="px-4 py-2 font-medium"></th>
                 </tr>
@@ -131,6 +128,7 @@ export default async function CycleDetail({ params }: { params: Params }) {
                       </span>
                     </td>
                     <td className="px-4 py-2 text-xs text-zinc-400">—</td>
+                    <td className="px-4 py-2 text-xs text-zinc-400">—</td>
                     <td className="px-4 py-2">
                       <TokenLink url={`${baseUrl}/?token=${p.token}`} />
                     </td>
@@ -146,6 +144,7 @@ export default async function CycleDetail({ params }: { params: Params }) {
                 {participants.map((p) => {
                   const sub = p.submissions[0];
                   const bucket = sub?.score?.suggestedBucket ?? null;
+                  const headline = headlineFromScore(sub?.score ?? null);
                   return (
                     <tr key={p.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800">
                       <td className="px-4 py-2 font-medium text-zinc-900 dark:text-zinc-50">
@@ -166,6 +165,13 @@ export default async function CycleDetail({ params }: { params: Params }) {
                           </span>
                         ) : (
                           <span className="text-xs text-zinc-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-sm font-mono text-zinc-700 dark:text-zinc-300">
+                        {headline === null ? (
+                          <span className="text-xs text-zinc-400">—</span>
+                        ) : (
+                          <span>{headline.toFixed(1)}<span className="text-xs text-zinc-400">/10</span></span>
                         )}
                       </td>
                       <td className="px-4 py-2">

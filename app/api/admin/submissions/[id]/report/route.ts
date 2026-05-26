@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth/admin";
 import { prisma } from "@/lib/db";
 import { DIAGNOSTIC_QUESTIONS } from "@/lib/config/diagnostic-questions";
+import { headlineFromScore } from "@/lib/scoring/bucket";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -102,10 +103,19 @@ function renderReport(s: ReportInput): string {
   lines.push("");
 
   // ─── Final bucket ───────────────────────────────────────────────────────
+  const headline = headlineFromScore(score);
   lines.push("## Final bucket");
   lines.push("");
   if (final) {
     lines.push(`**${bucketLabel(final)}**${isOverride ? ` _(admin override of AI's suggested "${score!.suggestedBucket}")_` : ""}`);
+    if (headline !== null) {
+      lines.push("");
+      lines.push(`**Headline score: ${headline.toFixed(1)} / 10**`);
+      lines.push("");
+      lines.push(
+        "_The bucket is the authoritative label (per PRD §5.5). The headline score is a deterministic weighted sum of the dimension scores below — useful for sortable comparison across the cohort, not a replacement for the bucket._",
+      );
+    }
     if (decision?.flagged) {
       lines.push("");
       lines.push("⚠️ Flagged by admin for second-opinion review.");
@@ -134,6 +144,10 @@ function renderReport(s: ReportInput): string {
   lines.push("| **Fast multiplier** | AI fingerprint ≥4/5 **AND** ≥2 traps fully caught **AND** diagnostic forward-orientation avg >2.0 **AND** floor zone cleared. |");
   lines.push("| **Slow multiplier** | Any signal present but not consistently strong. The default for anyone not clearly fast or low. |");
   lines.push("| **Low multiplier** | AI fingerprint ≤2/5 **AND** traps mostly missed **AND** diagnostic flat — **all three required**. A single strong dimension takes someone out of this bucket. |");
+  lines.push("");
+  lines.push(
+    "The **headline score (0–10)** at the top is a deterministic weighted sum of the dimension scores, not an LLM judgment: AI fingerprint 40% · trap handling 20% · diagnostic 20% · zone 15% · notes 5%. If notes weren't submitted, the 5% is redistributed proportionally across the other four (so skipping notes is neither penalised nor rewarded). The headline is for sorting / comparison; the bucket label remains authoritative.",
+  );
   lines.push("");
   lines.push("Scoring covers **five dimensions**:");
   lines.push("");

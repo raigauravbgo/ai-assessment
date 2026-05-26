@@ -101,3 +101,128 @@ function describeSlow(
   }
   return `Slow multiplier — mixed signals, neither consistently strong nor convergently weak. ${summary}`;
 }
+
+// ---------------------------------------------------------------------------
+// Headline score — a derived 0–10 number for sortable / shareable comparison.
+//
+// Bucket remains the authoritative label per PRD §5.5. The headline score is
+// a deterministic function of the same dimensions, intended for cohort views
+// and external reporting where a single number is more legible than a label.
+//
+// Weights (must sum to 1.0):
+//   AI fingerprint  40%  — PRD §5.4 D3 is the most important dimension
+//   Trap handling   20%  — strongest objective signal
+//   Diagnostic      20%  — forward orientation
+//   Zone completion 15%  — once floor is cleared, less differentiating
+//   Notes quality    5%  — optional dimension; rebalanced if absent
+//
+// If notes are absent (sub-scores null per PRD §5.4 D4), notes' 5% weight is
+// redistributed across the other four dimensions proportionally — so a
+// participant who skipped notes is neither penalised nor rewarded for it.
+// ---------------------------------------------------------------------------
+
+export type HeadlineInputs = {
+  /** PRD §5.4 D1: count of zones cleared (0–3). */
+  zoneScore: number;
+  /** PRD §5.4 D2: count of traps with status === "caught" (0–3). */
+  trapsCaught: number;
+  /** PRD §5.4 D3 overall: 1–5. */
+  aiFingerprintScore: number;
+  /** PRD §5.4 D5: avg of the three per-question scores (1–3). */
+  diagnosticAvg: number;
+  /** PRD §5.4 D4: null if notes weren't submitted (distinct from a weak note). */
+  notes: {
+    awarenessScore: number;
+    honestyScore: number;
+    processScore: number;
+  } | null;
+};
+
+const HEADLINE_WEIGHTS = {
+  aiFingerprint: 0.4,
+  traps: 0.2,
+  diagnostic: 0.2,
+  zone: 0.15,
+  notes: 0.05,
+} as const;
+
+/** Returns a 0–10 score, rounded to one decimal. */
+export function headlineScore(s: HeadlineInputs): number {
+  const aiFpNorm = clamp01((s.aiFingerprintScore - 1) / 4); // 1→0, 5→1
+  const trapsNorm = clamp01(s.trapsCaught / 3); // 0→0, 3→1
+  const zoneNorm = clamp01(s.zoneScore / 3); // 0→0, 3→1
+  const diagNorm = clamp01((s.diagnosticAvg - 1) / 2); // 1→0, 3→1
+
+  const components: Array<[number, number]> = [
+    [aiFpNorm, HEADLINE_WEIGHTS.aiFingerprint],
+    [trapsNorm, HEADLINE_WEIGHTS.traps],
+    [diagNorm, HEADLINE_WEIGHTS.diagnostic],
+    [zoneNorm, HEADLINE_WEIGHTS.zone],
+  ];
+
+  if (s.notes) {
+    const notesAvg =
+      (s.notes.awarenessScore + s.notes.honestyScore + s.notes.processScore) / 3;
+    const notesNorm = clamp01((notesAvg - 1) / 2);
+    components.push([notesNorm, HEADLINE_WEIGHTS.notes]);
+  } else {
+    // Renormalize the other 4 weights so they still sum to 1.
+    const total = components.reduce((acc, [, w]) => acc + w, 0); // 0.95
+    for (let i = 0; i < components.length; i++) {
+      components[i] = [components[i][0], components[i][1] / total];
+    }
+  }
+
+  const weightedSum = components.reduce((acc, [v, w]) => acc + v * w, 0);
+  return Math.round(weightedSum * 100) / 10; // 0–10, one decimal
+}
+
+function clamp01(x: number): number {
+  if (Number.isNaN(x)) return 0;
+  if (x < 0) return 0;
+  if (x > 1) return 1;
+  return x;
+}
+
+// Helper for UI / report code paths that have a Score row directly.
+// Returns null when the score record is missing (caller decides how to
+// render "—" vs the number).
+export function headlineFromScore(
+  score: {
+    zoneScore: number;
+    trap1Status: string;
+    trap2Status: string;
+    trap3Status: string;
+    aiFingerprintScore: number;
+    diagnosticQ1Score: number;
+    diagnosticQ2Score: number;
+    diagnosticQ3Score: number;
+    notesAwarenessScore: number | null;
+    notesHonestyScore: number | null;
+    notesProcessScore: number | null;
+  } | null,
+): number | null {
+  if (!score) return null;
+  const trapsCaught = [score.trap1Status, score.trap2Status, score.trap3Status].filter(
+    (s) => s === "caught",
+  ).length;
+  const diagnosticAvg =
+    (score.diagnosticQ1Score + score.diagnosticQ2Score + score.diagnosticQ3Score) / 3;
+  const notes =
+    score.notesAwarenessScore !== null &&
+    score.notesHonestyScore !== null &&
+    score.notesProcessScore !== null
+      ? {
+          awarenessScore: score.notesAwarenessScore,
+          honestyScore: score.notesHonestyScore,
+          processScore: score.notesProcessScore,
+        }
+      : null;
+  return headlineScore({
+    zoneScore: score.zoneScore,
+    trapsCaught,
+    aiFingerprintScore: score.aiFingerprintScore,
+    diagnosticAvg,
+    notes,
+  });
+}

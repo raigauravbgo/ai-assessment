@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bucketSuggestion, type BucketInputs } from "./bucket";
+import { bucketSuggestion, headlineScore, type BucketInputs, type HeadlineInputs } from "./bucket";
 
 // Default "passes everything" scoring used as a baseline; tests override fields.
 const fastBaseline: BucketInputs = {
@@ -122,5 +122,84 @@ describe("bucketSuggestion — slow bucket (everything else)", () => {
     expect(result.bucket).toBe("slow");
     expect(result.reasoning).toMatch(/close to fast/);
     expect(result.reasoning).toMatch(/diagnostic avg not > 2/);
+  });
+});
+
+describe("headlineScore (derived 0–10 for reporting)", () => {
+  const topInputs: HeadlineInputs = {
+    zoneScore: 3,
+    trapsCaught: 3,
+    aiFingerprintScore: 5,
+    diagnosticAvg: 3,
+    notes: { awarenessScore: 3, honestyScore: 3, processScore: 3 },
+  };
+  const bottomInputs: HeadlineInputs = {
+    zoneScore: 0,
+    trapsCaught: 0,
+    aiFingerprintScore: 1,
+    diagnosticAvg: 1,
+    notes: { awarenessScore: 1, honestyScore: 1, processScore: 1 },
+  };
+
+  it("returns 10.0 for the top of every dimension", () => {
+    expect(headlineScore(topInputs)).toBe(10);
+  });
+
+  it("returns 0.0 for the bottom of every dimension", () => {
+    expect(headlineScore(bottomInputs)).toBe(0);
+  });
+
+  it("treats null notes as 'weight redistributed', not 'weak notes'", () => {
+    const withNullNotes: HeadlineInputs = { ...topInputs, notes: null };
+    expect(headlineScore(withNullNotes)).toBe(10);
+
+    const withWeakNotes: HeadlineInputs = {
+      ...topInputs,
+      notes: { awarenessScore: 1, honestyScore: 1, processScore: 1 },
+    };
+    expect(headlineScore(withWeakNotes)).toBeLessThan(10);
+  });
+
+  it("weights AI fingerprint at 40% — flipping it alone moves the score the most", () => {
+    const onlyAiTop: HeadlineInputs = {
+      zoneScore: 0,
+      trapsCaught: 0,
+      aiFingerprintScore: 5,
+      diagnosticAvg: 1,
+      notes: null,
+    };
+    const onlyTrapsTop: HeadlineInputs = {
+      zoneScore: 0,
+      trapsCaught: 3,
+      aiFingerprintScore: 1,
+      diagnosticAvg: 1,
+      notes: null,
+    };
+    expect(headlineScore(onlyAiTop)).toBeGreaterThan(headlineScore(onlyTrapsTop));
+  });
+
+  it("is rounded to one decimal place", () => {
+    const result = headlineScore({
+      zoneScore: 2,
+      trapsCaught: 1,
+      aiFingerprintScore: 3,
+      diagnosticAvg: 2,
+      notes: { awarenessScore: 2, honestyScore: 2, processScore: 2 },
+    });
+    expect(result).toBe(Math.round(result * 10) / 10);
+  });
+
+  it("clamps out-of-range inputs gracefully", () => {
+    // Defensive: scorer may occasionally return values outside the documented
+    // range. The headline shouldn't NaN or go negative.
+    const wild = headlineScore({
+      zoneScore: 99,
+      trapsCaught: -1,
+      aiFingerprintScore: 10,
+      diagnosticAvg: 5,
+      notes: null,
+    });
+    expect(wild).toBeGreaterThanOrEqual(0);
+    expect(wild).toBeLessThanOrEqual(10);
   });
 });
