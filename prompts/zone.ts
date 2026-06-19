@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ProblemConfig, SubmissionArtifacts } from "./types";
+import { formatSourceBundle } from "./format";
 
 // PRD §5.4 Dimension 1 — Zone completion. Binary per zone, observation per zone.
 export const zoneOutputSchema = z.object({
@@ -56,6 +57,6 @@ ${artifacts.fileTree}
 
 SOURCE FILES
 ============
-${artifacts.sourceFiles.map((f) => `--- ${f.path} ---\n${f.content}`).join("\n\n")}
+${formatSourceBundle(artifacts.sourceFiles)}
 `;
 }

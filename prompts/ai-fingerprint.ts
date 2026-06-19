@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ProblemConfig, SubmissionArtifacts } from "./types";
+import { formatSourceBundle } from "./format";
 
 // PRD §5.4 Dimension 3 — AI fingerprint. The most important dimension.
 // Looking for evidence of AI-native JUDGMENT, not AI-generated code.
@@ -109,6 +110,6 @@ ${artifacts.fileTree}
 
 SOURCE FILES
 ============
-${artifacts.sourceFiles.map((f) => `--- ${f.path} ---\n${f.content}`).join("\n\n")}
+${formatSourceBundle(artifacts.sourceFiles)}
 `;
 }

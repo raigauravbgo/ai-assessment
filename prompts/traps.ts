@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ProblemConfig, SubmissionArtifacts } from "./types";
+import { formatSourceBundle } from "./format";
 
 // PRD §5.4 Dimension 2 — Trap handling.
 export const trapStatusSchema = z.enum(["caught", "partial", "missed"]);
@@ -65,6 +66,6 @@ ${artifacts.fileTree}
 
 SOURCE FILES
 ============
-${artifacts.sourceFiles.map((f) => `--- ${f.path} ---\n${f.content}`).join("\n\n")}
+${formatSourceBundle(artifacts.sourceFiles)}
 `;
 }
